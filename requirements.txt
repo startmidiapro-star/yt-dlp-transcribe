@@ -1,6 +1,6 @@
-yt-dlp
-whisper
-torch
 flask
 gunicorn
+yt-dlp
+torch
+openai-whisper
 openai
