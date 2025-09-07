@@ -2,11 +2,12 @@ from flask import Flask, request, jsonify
 import subprocess
 import whisper
 import os
+import uuid
 
 app = Flask(__name__)
 
-# Carrega o modelo Whisper
-model = whisper.load_model("base")
+# Carrega o modelo Whisper (menor para economizar memória)
+model = whisper.load_model("tiny")
 
 @app.route("/transcribe", methods=["POST"])
 def transcribe():
@@ -16,19 +17,22 @@ def transcribe():
     if not url:
         return jsonify({"error": "Você precisa enviar a URL do vídeo"}), 400
 
+    output_file = f"audio_{uuid.uuid4().hex}.mp3"
     try:
         # Baixa o vídeo usando yt-dlp
-        output_file = "audio.mp3"
         subprocess.run(["yt-dlp", "-x", "--audio-format", "mp3", "-o", output_file, url], check=True)
 
         # Transcreve com Whisper
         result = model.transcribe(output_file, language="pt")
-        os.remove(output_file)
-
         return jsonify({"transcription": result["text"]})
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+
+    finally:
+        # Remove o arquivo temporário, se existir
+        if os.path.exists(output_file):
+            os.remove(output_file)
 
 @app.route("/", methods=["GET"])
 def home():
